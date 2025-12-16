@@ -63,6 +63,10 @@ export type ServerMessage =
       reason: string;
     }
   | {
+      type: "GAME_CREATED";
+      gameId: string;
+    }
+  | {
       type: "SCENARIO_STARTED";
       scenarioId: string;
       territoryId: string;

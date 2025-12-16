@@ -1,8 +1,9 @@
-import { getVersion } from "@end-of-line/shared";
 // ABOUTME: Tests for server API endpoints
 // ABOUTME: Validates server can import from shared package
+
+import { getVersion } from "@end-of-line/shared";
 import { describe, expect, it } from "vitest";
-import app from "./index.js";
+import { app } from "./index.js";
 
 describe("Server Integration", () => {
   it("should import from @end-of-line/shared", () => {
@@ -10,7 +11,7 @@ describe("Server Integration", () => {
   });
 
   it("should have Hono app configured", () => {
-    expect(app.port).toBe(3001);
+    expect(app).toBeDefined();
     expect(typeof app.fetch).toBe("function");
   });
 

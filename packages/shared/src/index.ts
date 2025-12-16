@@ -44,6 +44,30 @@ export {
 // Export execution engine
 export { executeCard } from "./execution";
 
+// Export card decks
+export { weylandDeck } from "./cards/weyland-deck";
+export { anarchDeck } from "./cards/anarch-deck";
+
+// Export hex grid utilities
+export {
+  get3x3GridCoords,
+  coordToId,
+  idToCoord,
+  getNeighbors,
+  getNeighborIds,
+  axialToPixel,
+  pixelToAxial,
+  axialRound,
+  createTerritory,
+  createHexGrid,
+  isCorpControlled,
+  isRunnerControlled,
+  clamp,
+  modifyTerritory,
+  type AxialCoord,
+  type HexPosition,
+} from "./hex";
+
 /**
  * Validates that the monorepo is correctly configured
  * @returns true if the environment is valid
