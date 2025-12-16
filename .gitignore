@@ -137,3 +137,39 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Scratchpad (temporary dev artifacts)
+scratchpad/
+!scratchpad/.gitkeep
+
+# Turbo
+.turbo
+
+# Monorepo build artifacts
+packages/*/dist
+packages/*/coverage
+packages/*/.turbo
+
+# Package manager
+node_modules/
+pnpm-lock.yaml
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Database
+*.db
+*.db-journal
+migrations/
+
+# Build outputs
+.next/
+.vite/
+dist/
+build/
+
+# Testing
+coverage/
+.vitest/

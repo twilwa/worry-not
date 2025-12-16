@@ -14,6 +14,15 @@ export type ClientMessage =
       type: "END_TURN";
     }
   | {
+      type: "PLACE_INFLUENCE";
+      territoryId: string;
+      amount: number;
+    }
+  | {
+      type: "RUN_TERRITORY";
+      territoryId: string;
+    }
+  | {
       type: "TRIGGER_SCENARIO";
       territoryId: string;
     }

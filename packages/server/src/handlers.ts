@@ -2,6 +2,7 @@
 // ABOUTME: Routes incoming messages to appropriate game logic
 
 import type { ClientMessage, ServerMessage } from "@end-of-line/shared";
+import { modifyTerritory, clamp } from "@end-of-line/shared";
 import type { WSContext } from "hono/ws";
 import {
   createSession,
@@ -10,6 +11,7 @@ import {
   removePlayer,
   broadcastToSession,
   isPlayerTurn,
+  getPlayerRole,
   type GameSession,
 } from "./sessions.js";
 
@@ -140,6 +142,139 @@ function handleEndTurn(ctx: HandlerContext): void {
   });
 }
 
+function handlePlaceInfluence(
+  ctx: HandlerContext,
+  territoryId: string,
+  amount: number
+): void {
+  const { playerId, ws } = ctx;
+  const session = getSessionByPlayer(playerId);
+
+  if (!session) {
+    sendError(ws, "Not in a game");
+    return;
+  }
+
+  if (!isPlayerTurn(session, playerId)) {
+    sendError(ws, "Not your turn");
+    return;
+  }
+
+  const role = getPlayerRole(session, playerId);
+  const territory = session.state.territories.find((t) => t.id === territoryId);
+
+  if (!territory) {
+    sendError(ws, "Territory not found");
+    return;
+  }
+
+  // Corp increases influence, Runner decreases it
+  const delta = role === "CORP" ? amount : -amount;
+  const newInfluence = clamp(territory.corporateInfluence + delta, 0, 100);
+
+  // Update territory in place
+  const idx = session.state.territories.findIndex((t) => t.id === territoryId);
+  if (idx !== -1) {
+    session.state.territories[idx] = modifyTerritory(territory, {
+      corporateInfluence: newInfluence,
+    });
+  }
+
+  // Deduct action
+  const player = session.state.players.find((p) => p.id === playerId);
+  if (player) {
+    player.actions -= 1;
+  }
+
+  broadcastToSession(session, {
+    type: "STATE_DELTA",
+    delta: {
+      territories: session.state.territories,
+      players: session.state.players,
+    },
+  });
+}
+
+function handleRunTerritory(ctx: HandlerContext, territoryId: string): void {
+  const { playerId, ws } = ctx;
+  const session = getSessionByPlayer(playerId);
+
+  if (!session) {
+    sendError(ws, "Not in a game");
+    return;
+  }
+
+  if (!isPlayerTurn(session, playerId)) {
+    sendError(ws, "Not your turn");
+    return;
+  }
+
+  const role = getPlayerRole(session, playerId);
+  if (role !== "RUNNER") {
+    sendError(ws, "Only Runner can run territories");
+    return;
+  }
+
+  const territory = session.state.territories.find((t) => t.id === territoryId);
+  if (!territory) {
+    sendError(ws, "Territory not found");
+    return;
+  }
+
+  if (territory.corporateInfluence < 60) {
+    sendError(ws, "Can only run Corp-controlled territories");
+    return;
+  }
+
+  // Simple run resolution: 50% chance success
+  // Success: reduce influence by 20, Runner gains 2 credits
+  // Fail: Runner loses 1 action, Corp gains 10 influence
+  const success = Math.random() > 0.5;
+  const runner = session.state.players.find((p) => p.id === playerId);
+  const idx = session.state.territories.findIndex((t) => t.id === territoryId);
+
+  if (success) {
+    if (idx !== -1) {
+      session.state.territories[idx] = modifyTerritory(territory, {
+        corporateInfluence: territory.corporateInfluence - 20,
+      });
+    }
+    if (runner) {
+      runner.credits += 2;
+      runner.actions -= 1;
+    }
+    broadcastToSession(session, {
+      type: "SCENARIO_ENDED",
+      scenarioId: `run-${Date.now()}`,
+      outcome: "RUNNER_WIN",
+      rewards: { credits: 2 },
+    });
+  } else {
+    if (idx !== -1) {
+      session.state.territories[idx] = modifyTerritory(territory, {
+        corporateInfluence: Math.min(territory.corporateInfluence + 10, 100),
+      });
+    }
+    if (runner) {
+      runner.actions -= 1;
+    }
+    broadcastToSession(session, {
+      type: "SCENARIO_ENDED",
+      scenarioId: `run-${Date.now()}`,
+      outcome: "CORP_WIN",
+      rewards: {},
+    });
+  }
+
+  broadcastToSession(session, {
+    type: "STATE_DELTA",
+    delta: {
+      territories: session.state.territories,
+      players: session.state.players,
+    },
+  });
+}
+
 function handleTriggerScenario(ctx: HandlerContext, territoryId: string): void {
   const { playerId, ws } = ctx;
   const session = getSessionByPlayer(playerId);
@@ -187,6 +322,12 @@ export function handleMessage(
       break;
     case "END_TURN":
       handleEndTurn(ctx);
+      break;
+    case "PLACE_INFLUENCE":
+      handlePlaceInfluence(ctx, message.territoryId, message.amount);
+      break;
+    case "RUN_TERRITORY":
+      handleRunTerritory(ctx, message.territoryId);
       break;
     case "TRIGGER_SCENARIO":
       handleTriggerScenario(ctx, message.territoryId);

@@ -1,0 +1,52 @@
+[tools]
+node = "22"
+pnpm = "9"
+
+[env]
+NODE_ENV = "development"
+
+[tasks.context]
+description = "Show project context for onboarding"
+run = """
+echo "═══════════════════════════════════════════════════════"
+echo "  END OF LINE - Project Context"
+echo "═══════════════════════════════════════════════════════"
+echo ""
+echo "📋 WHAT ARE WE BUILDING?"
+echo "A multiplayer roguelike deckbuilder with asymmetric"
+echo "Corp vs Runner gameplay. Browser-based, mobile-friendly."
+echo ""
+echo "Core Innovation: Overworld ↔ Scenario interplay loop"
+echo "  - Strategic Overworld: hex territory control"
+echo "  - Tactical Scenarios: instanced card battles"
+echo "  - Actions in one layer affect the other"
+echo ""
+echo "📊 CURRENT STATE:"
+bd stats
+echo ""
+echo "🎯 READY TO WORK ON:"
+bd ready
+echo ""
+echo "📚 KEY DOCS:"
+echo "  - CLAUDE.md (agent instructions)"
+echo "  - openspec/project.md (tech decisions)"
+echo "  - netrunner-levelsio/gamedesigndoc-final.md (game design)"
+echo ""
+echo "🔗 EXTERNAL TRACKING:"
+echo "  - Linear: TRI-170 (MVP milestone)"
+echo ""
+"""
+
+[tasks.status]
+description = "Quick status check"
+run = """
+echo "📊 Beads:"
+bd stats
+echo ""
+echo "🎯 Ready:"
+bd ready
+"""
+
+[tasks.blocked]
+description = "Show blocked tasks and their blockers"
+run = "bd blocked"
